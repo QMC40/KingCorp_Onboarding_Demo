@@ -6,17 +6,23 @@
 
 #IncludeRegexTransform: 
 
-/cygdrive/c/Users/panze/CLionProjects/OS_Project_4/Matrix.h
+C:/Users/panze/CLionProjects/OS_Project_4/Matrix.h
 cstdio
 -
 fstream
 -
 
-/cygdrive/c/Users/panze/CLionProjects/OS_Project_4/main.cpp
+C:/Users/panze/CLionProjects/OS_Project_4/System.h
+Matrix.h
+C:/Users/panze/CLionProjects/OS_Project_4/Matrix.h
+
+C:/Users/panze/CLionProjects/OS_Project_4/main.cpp
+iostream
+-
 cstdio
 -
 fstream
 -
-Matrix.h
-/cygdrive/c/Users/panze/CLionProjects/OS_Project_4/Matrix.h
+System.h
+C:/Users/panze/CLionProjects/OS_Project_4/System.h
 
