@@ -2,12 +2,13 @@
 #define OS_PROJECT_4_SYSTEM_H
 
 #include "Matrix.h"
+#include <algorithm>
 
 class System {
 
 private:
-    int row;
-    int col;
+    int threads;
+    int resources;
     int processNum;
 
     // Matrices pointers
@@ -23,12 +24,12 @@ private:
 public:
 
     System(int row, int col) {
-        this->row = row;
-        this->col = col;
+        this->threads = row;
+        this->resources = col;
         this->processNum = 0;
         this->allocation = new Matrix(row, col);
         this->max = new Matrix(row, col);
-        this->need = new Matrix(row,col);
+        this->need = new Matrix(row, col);
 
         this->request = new Matrix(1, col);
         this->available = new Matrix(1, col);
@@ -46,16 +47,16 @@ public:
 
     void report();
 
-    static bool inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int row);
+    static bool inSafeState(Matrix need, Matrix &allocation, Matrix &available, int process);
 
     void populateMatrices(ifstream &infile);
 
     int getRow() const {
-        return row;
+        return threads;
     }
 
     int getCol() const {
-        return col;
+        return resources;
     }
 
     int getProcessNum() const {
@@ -68,19 +69,19 @@ void System::report() {
 // Print the report.....................................
     printf("\nTHE REPORT STARTS HERE.........................\n\n"
            "There are %d processes in the system.\n\n"
-           "There are %d resource types.\n",getRow(), getCol());
+           "There are %d resource types.\n", getRow(), getCol());
 // Matrices
-    allocation->print(0,"Allocation Matrix");
-    max->print(0,"Max Matrix");
-    need->print(0,"Need Matrix");
+    allocation->print(0, "Allocation Matrix");
+    max->print(0, "Max Matrix");
+    need->print(0, "Need Matrix");
 // Available vector
-    available->print(-1,"Available Vector");
+    available->print(-1, "Available Vector");
 // Current status of system
-    printf("\nTHE SYSTEM IS IN A %s STATE!\n",(inSafeState(*need, *allocation, *available,
-        getRow())) ? "SAFE" : "NOT SAFE");
+    printf("\nTHE SYSTEM IS IN A %s STATE!\n", (inSafeState(*need, *allocation, *available,
+                                                            getRow())) ? "SAFE" : "NOT SAFE");
 // Request Vector
     resourceRequest->setToZeroExcept(processNum, *request);
-    request->print(getProcessNum(),"Request Vector");
+    request->print(getProcessNum(), "Request Vector");
 // determine if the request is granted
     if (resourceRequest <= need) {
         if (request <= available) {
@@ -90,7 +91,7 @@ void System::report() {
             if (inSafeState(*need, *allocation, *available, getRow())) {
                 printf("\nTHE REQUEST CAN BE GRANTED!\n");
 // calculate and print new available vector
-                available->print(-1,"New Available Vector");
+                available->print(-1, "New Available Vector");
             } else
                 printf("\nTHE REQUEST CANNOT BE GRANTED!\nTHE SYSTEM IS NOT IN SAFE STATE IF "
                        "REQUEST IS GRANTED!\n");
@@ -102,30 +103,44 @@ void System::report() {
     printf("\nEND REPORT......................................\n\n");
 }
 
-bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int row) {
-// Initialize variables
+bool System::inSafeState(Matrix need, Matrix &allocation, Matrix &available, int process) {
+    // Initialize variables
+    //copy of the available resources vector
     Matrix work = available;
-    bool finished[row]; // Finished = {False}
-    for (int i = 0; i < row; i++)
-        finished[i] = false;
-    int last = 0;
-    int current = row;
-// Loop starts to determine if the current state safe
-    while (last != current) {
-        last = current; // update undone
-        for (int i = 0; i < row; i++) {
-// looking for undone process and has need </= work
-            if (need.at(i) <= work && !finished[i]) {
-                current--; // update update
-                finished[i] = true; // set process to finished
-                work += allocation.at(i); // update work
-            }
-        }
+
+    // vector to mark which processes satisfied and finish
+    int finish[process];
+    for (int i = 0; i < process; i++) {
+        finish[i] = -1;
     }
-    if (current == 0)
+
+
+    bool fail = true;
+    int count = 0;
+    int cycle = 0;
+
+    // Loop starts to determine if the current state safe
+    do {
+        cycle = 0;
+        fail = true;
+        do {
+            cout << "cycle " << cycle << " " << (finish[count] == -1) << " && " << (need.at(count) <= work) << endl;
+            if (finish[count] == -1 && need.at(count) <= work) {
+                cout << "HIT " << count << endl;
+                finish[count] = count; // mark process as completed using count of process in go list
+                work += allocation.at(count); // work regains resources released by completed process
+                fail = false;
+                count++;
+            }
+            cycle++;
+        } while (cycle < process);
+    } while (!fail);
+
+    if (count != process) {
         return true;
-    else
+    } else {
         return false;
+    }
 }
 
 void System::populateMatrices(ifstream &infile) {

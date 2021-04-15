@@ -5,11 +5,6 @@
 
 using namespace std;
 
-//*********************************************************
-//
-// Function Declarations
-//
-//*********************************************************
 
 // Check if in safe state
 bool inSafeState(Matrix &, Matrix &, Matrix &, int);
@@ -52,6 +47,6 @@ System systemBuilder(int argc, char **argv) {
 
 
 
-    cout << "done";
+//    cout << "done";
     return test;
 }

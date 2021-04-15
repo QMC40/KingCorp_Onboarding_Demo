@@ -13,7 +13,7 @@
 using namespace std;
 
 struct Matrix {
-public:
+
 //private:
     int threads;
     int resources;
@@ -30,11 +30,11 @@ public:
 
 public:
 
-    // constructor, defaults to one thread / row (n) and 1 resource / column (m)
-    explicit Matrix(int n = 1, int m = 1) {
-        threads = n;
-        resources = m;
-        subMatrix = new int *[threads];
+    // constructor, defaults to one thread / row and 1 resource / column
+    explicit Matrix(int threads = 1, int resources = 1) {
+        this->threads = threads;
+        this->resources = resources;
+        subMatrix = new int* [threads];
         for (int i = 0; i < threads; i++) {
             subMatrix[i] = new int[resources];
         }
@@ -71,10 +71,10 @@ public:
 
     //write isEmpty() for matrix
 
-/* get thread / row from Matrix
+/* get thread / threads from Matrix
 Return: Matrix&
 Parameter:
-r int the thread / row to get */
+r int the thread / threads to get */
     Matrix at(int r) const {
         Matrix ret(1, resources);
         try {
@@ -86,7 +86,7 @@ r int the thread / row to get */
                         ret.subMatrix[0][i] = this->subMatrix[r][i];
                     }
                 } else {
-                    throw out_of_range("Matrix thread / row is empty!\n");
+                    throw out_of_range("Matrix thread / threads is empty!\n");
                 }
                 return ret;
             } else {
@@ -143,7 +143,7 @@ infile ifstream& reference to data file */
     }
 
 /* set all value of Matrix to 0,
-except a thread / row will be copied from provided 1D matrix
+except a thread / threads will be copied from provided 1D matrix
 Parameters:
 r int exceptional thread
 request Matrix& reference to 1D matrix to be copied */
@@ -232,11 +232,12 @@ rhs const Matrix& reference to the comparing matrix */
         if (rhs.resources != this->resources && rhs.threads != this->threads) {
             cout << endl << "fail" << endl;
             return false;
-        }
-        for (int i = 0; i < threads; i++) {
-            for (int j = 0; j < resources; j++) {
-                if (this->subMatrix[i][j] > rhs.subMatrix[i][j]) {
-                    return false;
+        } else {
+            for (int i = 0; i < threads; i++) {
+                for (int j = 0; j < resources; j++) {
+                    if (this->subMatrix[i][j] > rhs.subMatrix[i][j]) {
+                        return false;
+                    }
                 }
             }
         }
