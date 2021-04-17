@@ -30,8 +30,8 @@ struct Matrix {
 
 public:
 
-    // constructor, defaults to one thread / row and 1 resource / column
-    explicit Matrix(int threads = 1, int resources = 1) {
+    // constructor
+    explicit Matrix(int threads, int resources) {
         this->threads = threads;
         this->resources = resources;
         subMatrix = new int* [threads];
@@ -59,13 +59,13 @@ public:
 
     // destructor, frees allocated memory
     ~Matrix() {
-        if (subMatrix) {
+        if (subMatrix != nullptr) {
             for (int i = 0; i < threads; i++) {
                 if (subMatrix[i]) {
-                    delete[] subMatrix[i];
+                    delete subMatrix[i];
                 }
-                delete[] subMatrix;
             }
+            delete subMatrix;
         }
     }
 

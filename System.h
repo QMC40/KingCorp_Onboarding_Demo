@@ -47,7 +47,7 @@ public:
 
     void report();
 
-    static bool inSafeState(Matrix need, Matrix &allocation, Matrix &available, int process);
+    static bool inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process);
 
     void populateMatrices(ifstream &infile);
 
@@ -77,8 +77,8 @@ void System::report() {
 // Available vector
     available->print(-1, "Available Vector");
 // Current status of system
-    printf("\nTHE SYSTEM IS IN A %s STATE!\n", (inSafeState(*need, *allocation, *available,
-                                                            getRow())) ? "SAFE" : "NOT SAFE");
+    printf("\nTHE SYSTEM IS %s STATE!\n", (inSafeState(*need, *allocation, *available,
+                                                            getRow())) ? "IN A SAFE" : "NOT IN A SAFE");
 // Request Vector
     resourceRequest->setToZeroExcept(processNum, *request);
     request->print(getProcessNum(), "Request Vector");
@@ -103,7 +103,7 @@ void System::report() {
     printf("\nEND REPORT......................................\n\n");
 }
 
-bool System::inSafeState(Matrix need, Matrix &allocation, Matrix &available, int process) {
+bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process) {
     // Initialize variables
     //copy of the available resources vector
     Matrix work = available;
@@ -114,7 +114,6 @@ bool System::inSafeState(Matrix need, Matrix &allocation, Matrix &available, int
         finish[i] = -1;
     }
 
-
     bool fail = true;
     int count = 0;
     int cycle = 0;
@@ -124,11 +123,11 @@ bool System::inSafeState(Matrix need, Matrix &allocation, Matrix &available, int
         cycle = 0;
         fail = true;
         do {
-            cout << "cycle " << cycle << " " << (finish[count] == -1) << " && " << (need.at(count) <= work) << endl;
-            if (finish[count] == -1 && need.at(count) <= work) {
-                cout << "HIT " << count << endl;
-                finish[count] = count; // mark process as completed using count of process in go list
-                work += allocation.at(count); // work regains resources released by completed process
+//            cout << "cycle " << cycle << " " << (finish[cycle] == -1) << " && " << (need.at(cycle) <= work) << endl;
+            if (finish[cycle] == -1 && need.at(cycle) <= work) {
+//                cout << "HIT " << count << " = cycle " << cycle << endl;
+                finish[cycle] = count; // mark process as completed using count of process in go list
+                work += allocation.at(cycle); // work regains resources released by completed process
                 fail = false;
                 count++;
             }
@@ -136,7 +135,7 @@ bool System::inSafeState(Matrix need, Matrix &allocation, Matrix &available, int
         } while (cycle < process);
     } while (!fail);
 
-    if (count != process) {
+    if (count == process) {
         return true;
     } else {
         return false;
