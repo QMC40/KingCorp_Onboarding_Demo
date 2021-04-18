@@ -5,6 +5,11 @@
 
 using namespace std;
 
+//*********************************************************
+//
+// Function Declarations
+//
+//*********************************************************
 
 // Check if in safe state
 bool inSafeState(Matrix &, Matrix &, Matrix &, int);
