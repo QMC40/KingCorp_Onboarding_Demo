@@ -101,21 +101,18 @@ r int the thread / threads to get */
     }
 
     // operator overloads for Matrix class
-/* operator=
-Return: Matrix&
-Parameters:
-rhs const Matrix& a reference to the matrix to be copied from */
+
     Matrix &operator = (const Matrix &rhs) {
-// Only do assignment if RHS is a different object from this.
+        // test for self-copy
         if (this != &rhs) {
-// deallocate this matrix
+            // delete old matrix
             if (this->subMatrix) {
                 for (int i = 0; i < this->threads; i++)
                     if (this->subMatrix[i])
                         delete[] this->subMatrix[i];
                 delete[] this->subMatrix;
             }
-// copy from &rhs matrix
+            // copy right to left
             this->threads = rhs.threads;
             this->resources = rhs.resources;
             if (rhs.subMatrix) {

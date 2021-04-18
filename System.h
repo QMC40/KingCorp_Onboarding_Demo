@@ -23,17 +23,17 @@ private:
 
 public:
 
-    System(int row, int col) {
-        this->threads = row;
-        this->resources = col;
+    System(int threads, int resources) {
+        this->threads = threads;
+        this->resources = resources;
         this->processNum = 0;
-        this->allocation = new Matrix(row, col);
-        this->max = new Matrix(row, col);
-        this->need = new Matrix(row, col);
+        this->allocation = new Matrix(threads, resources);
+        this->max = new Matrix(threads, resources);
+        this->need = new Matrix(threads, resources);
 
-        this->request = new Matrix(1, col);
-        this->available = new Matrix(1, col);
-        this->resourceRequest = new Matrix(row, col);
+        this->request = new Matrix(1, resources);
+        this->available = new Matrix(1, resources);
+        this->resourceRequest = new Matrix(threads, resources);
     }
 
     ~System() {
@@ -46,6 +46,8 @@ public:
     }
 
     void report();
+
+    void newRequest();
 
     static bool inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process);
 
@@ -79,12 +81,23 @@ void System::report() {
 // Current status of system
     printf("\nTHE SYSTEM IS %s STATE!\n", (inSafeState(*need, *allocation, *available,
                                                             getRow())) ? "IN A SAFE" : "NOT IN A SAFE");
-// Request Vector
+    newRequest();
+
+}
+
+void System::newRequest() {
+    // Request Vector
+    Matrix reqNeed = need->at(processNum);
+
+    reqNeed.print(1,"req test");
     resourceRequest->setToZeroExcept(processNum, *request);
+//    resourceRequest->setToZeroExcept(processNum, *request);
     request->print(getProcessNum(), "Request Vector");
 // determine if the request is granted
-    if (resourceRequest <= need) {
+    if (request <= &reqNeed) {
         if (request <= available) {
+            request->print(1,"request");
+            available->print(1,"available");
             *need -= *resourceRequest;
             *available -= *request;
             *allocation += *resourceRequest;
@@ -103,6 +116,7 @@ void System::report() {
     printf("\nEND REPORT......................................\n\n");
 }
 
+
 bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process) {
     // Initialize variables
     //copy of the available resources vector
@@ -113,6 +127,7 @@ bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, in
     for (int i = 0; i < process; i++) {
         finish[i] = -1;
     }
+
 
     bool fail = true;
     int count = 0;
