@@ -9,81 +9,97 @@
 
 #include <cstdio>
 #include <fstream>
+#include <utility>
 
 using namespace std;
 
 struct Matrix {
 
+    struct Process {
+        int resources;
+        int *resource;
+
+        explicit Process(int resources) {
+            this->resources = resources;
+            resource = new int[resources];
+        }
+
+        ~Process() {
+//            printf("Process destruct\n");
+            delete[] resource;
+        }
+    };
+
 //private:
+    string name;
     int threads;
     int resources;
-    int **subMatrix;
-
-    // print resource / column names
-    void printResource() const {
-        printf("%*c  ", 3, ' ');
-        for (int j = 0; j < resources; j++) {
-            printf("%*c ", 3, (char) ('A' + j));
-        }
-        printf("\n");
-    }
+    Process **procMatrix;
 
 public:
 
     // constructor
-    explicit Matrix(int threads, int resources) {
+    explicit Matrix(int threads, int resources, string name) {
+        this->name = std::move(name);
         this->threads = threads;
         this->resources = resources;
-        subMatrix = new int* [threads];
+        procMatrix = new Process *[threads];
         for (int i = 0; i < threads; i++) {
-            subMatrix[i] = new int[resources];
+            procMatrix[i] = new Process(resources);
         }
     }
+
+//    // constructor
+//    explicit Matrix(int threads, int resources) {
+//        this->threads = threads;
+//        this->resources = resources;
+//        procMatrix = new int* [threads];
+//        for (int i = 0; i < threads; i++) {
+//            procMatrix[i] = new int[resources];
+//        }
+//    }
 
     // copy constructor
     Matrix(const Matrix &rhs) {
         threads = rhs.threads;
         resources = rhs.resources;
-        if (rhs.subMatrix) {
-            subMatrix = new int *[threads];
+        if (rhs.procMatrix) {
+            procMatrix = new Process *[threads];
             for (int i = 0; i < threads; i++) {
-                if (rhs.subMatrix[i]) {
-                    subMatrix[i] = new int[resources];
-                    for (int j = 0; j < threads; j++) {
-                        subMatrix[i][j] = rhs.subMatrix[i][j];
+                if (rhs.procMatrix[i]) {
+                    procMatrix[i] = new Process(resources);
+                    for (int j = 0; j < resources; j++) {
+                        procMatrix[i]->resource[j] = rhs.procMatrix[i]->resource[j];
                     }
                 }
             }
         }
     }
 
-    // destructor, frees allocated memory
+    // destructor
     ~Matrix() {
-        if (subMatrix != nullptr) {
+        if (procMatrix != nullptr) {
+//            printf("%s destruct\n",name.c_str());
             for (int i = 0; i < threads; i++) {
-                if (subMatrix[i]) {
-                    delete subMatrix[i];
+                if (procMatrix[i]) {
+                    delete procMatrix[i];
                 }
             }
-            delete subMatrix;
+            delete procMatrix;
         }
     }
 
     //write isEmpty() for matrix
 
-/* get thread / threads from Matrix
-Return: Matrix&
-Parameter:
-r int the thread / threads to get */
     Matrix at(int r) const {
-        Matrix ret(1, resources);
+        Matrix ret(1, resources,"temp");
         try {
-            if (this->subMatrix) {
-                ret.subMatrix = new int *[1];
-                ret.subMatrix[0] = new int[resources];
-                if (this->subMatrix[r]) {
+            if (this->procMatrix) {
+                ret.procMatrix = new Process *[1];
+                ret.procMatrix[0] = new Process(resources);
+                if (this->procMatrix[r]) {
                     for (int i = 0; i < resources; i++) {
-                        ret.subMatrix[0][i] = this->subMatrix[r][i];
+                        ret.procMatrix[0]->resource[i] = this->procMatrix[r]->resource[i];
                     }
                 } else {
                     throw out_of_range("Matrix thread / threads is empty!\n");
@@ -106,22 +122,18 @@ r int the thread / threads to get */
         // test for self-copy
         if (this != &rhs) {
             // delete old matrix
-            if (this->subMatrix) {
-                for (int i = 0; i < this->threads; i++)
-                    if (this->subMatrix[i])
-                        delete[] this->subMatrix[i];
-                delete[] this->subMatrix;
-            }
+            delete procMatrix;
+
             // copy right to left
             this->threads = rhs.threads;
             this->resources = rhs.resources;
-            if (rhs.subMatrix) {
-                subMatrix = new int *[threads];
+            if (rhs.procMatrix) {
+                procMatrix = new Process *[threads];
                 for (int i = 0; i < threads; i++) {
-                    if (rhs.subMatrix[i]) {
-                        subMatrix[i] = new int[resources];
+                    if (rhs.procMatrix[i]) {
+                        procMatrix[i] = new Process(resources);
                         for (int j = 0; j < threads; j++)
-                            subMatrix[i][j] = rhs.subMatrix[i][j];
+                            procMatrix[i]->resource[j] = rhs.procMatrix[i]->resource[j];
                     }
                 }
             }
@@ -129,35 +141,30 @@ r int the thread / threads to get */
         return *this;
     }
 
-/* read from filestream
-Parameters:
-infile ifstream& reference to data file */
     void read(ifstream &infile) const {
-        if (infile.is_open())
-            for (int i = 0; i < threads; i++)
-                for (int j = 0; j < resources; j++)
-                    infile >> subMatrix[i][j];
+        int temp;
+        if (infile.is_open()) {
+            for (int i = 0; i < threads; i++) {
+                for (int j = 0; j < resources; j++) {
+                    infile >> procMatrix[i]->resource[j];
+                }
+            }
+        }
     }
 
-/* set all value of Matrix to 0,
-except a thread / threads will be copied from provided 1D matrix
-Parameters:
-r int exceptional thread
-request Matrix& reference to 1D matrix to be copied */
-    void setToZeroExcept(int r, const Matrix& request) const {
-        for (int i = 0; i < threads; i++)
-            for (int j = 0; j < resources; j++)
-                subMatrix[i][j] = 0;
-        if (request.threads == 1)
-            if (r >= 0 && r < threads)
-                for (int j = 0; j < resources; j++)
-                    subMatrix[r][j] = request.subMatrix[0][j];
+    void setToZeroExcept(int r, const Matrix &request) const {
+        for (int i = 0; i < threads; i++) {
+            for (int j = 0; j < resources; j++) {
+
+                if (i == r) {
+                            procMatrix[r]->resource[j] = request.procMatrix[0]->resource[j];
+                } else {
+                    procMatrix[i]->resource[j] = 0;
+                }
+            }
+        }
     }
 
-/* operator+=
-Return: Matrix&
-Parameters:
-rhs const Matrix& reference to the added matrix */
     Matrix &operator += (const Matrix &rhs) {
 // Throw exception when 2 matrices have different size.
         try {
@@ -165,10 +172,10 @@ rhs const Matrix& reference to the added matrix */
                 throw invalid_argument("Matrices' sizes are different!\n");
             }
 // Update this Matrix
-            if (this->subMatrix && rhs.subMatrix) {
+            if (this->procMatrix && rhs.procMatrix) {
                 for (int i = 0; i < this->threads; i++) {
                     for (int j = 0; j < this->resources; j++) {
-                        this->subMatrix[i][j] += rhs.subMatrix[i][j];
+                        this->procMatrix[i]->resource[j] += rhs.procMatrix[i]->resource[j];
                     }
                 }
             }
@@ -179,18 +186,10 @@ rhs const Matrix& reference to the added matrix */
         return *this;
     }
 
-/* operator+
-Return: Matrix&
-Parameters:
-other const Matrix& reference to the added matrix */
     Matrix operator + (const Matrix &other) const {
         return Matrix(*this) += other;
     }
 
-/* operator-=
-Return: Matrix&
-Parameters:
-rhs const Matrix& reference to the added matrix */
     Matrix &operator -= (const Matrix &rhs) {
 //        cout << endl << "subtracting" << endl;
 // Throw exception when 2 matrices have the same size.
@@ -199,12 +198,12 @@ rhs const Matrix& reference to the added matrix */
                 throw invalid_argument("Matrices' size are different!\n");
             }
 // Update this Matrix
-            if (this->subMatrix && rhs.subMatrix) {
+            if (this->procMatrix && rhs.procMatrix) {
                 Matrix *temp;
                 temp = this;
                 for (int i = 0; i < temp->threads; i++) {
                     for (int j = 0; j < temp->resources; j++) {
-                        temp->subMatrix[i][j] -= rhs.subMatrix[i][j];
+                        temp->procMatrix[i]->resource[j] -= rhs.procMatrix[i]->resource[j];
                     }
                 }
                 return *temp;
@@ -221,10 +220,6 @@ rhs const Matrix& reference to the added matrix */
         return Matrix(*this) -= other;
     }
 
-/* operator<=
-Return: bool
-Parameters:
-rhs const Matrix& reference to the comparing matrix */
     bool operator <= (const Matrix &rhs) const {
         if (rhs.resources != this->resources && rhs.threads != this->threads) {
             cout << endl << "fail" << endl;
@@ -232,7 +227,7 @@ rhs const Matrix& reference to the comparing matrix */
         } else {
             for (int i = 0; i < threads; i++) {
                 for (int j = 0; j < resources; j++) {
-                    if (this->subMatrix[i][j] > rhs.subMatrix[i][j]) {
+                    if (this->procMatrix[i]->resource[j] > rhs.procMatrix[i]->resource[j]) {
                         return false;
                     }
                 }
@@ -241,21 +236,26 @@ rhs const Matrix& reference to the comparing matrix */
         return true;
     }
 
-/* print matrix
-Parameter:
-r int the number to be start counting from
-not printed if negative */
-    void print(int r,const string& title) const {
-        printf("\nThe %s is...\n",title.c_str());
-        printResource();
+    void print(int p, const string &title) const {
+
+        //print title and column headers for resources
+        printf("\nThe %s is...\n", title.c_str());
+        printf("%*c  ", 3, ' ');
+        for (int j = 0; j < resources; j++) {
+            printf("%*c ", 3, (char) ('A' + j));
+        }
+        printf("\n");
+
+        //print the actual matrix
         for (int i = 0; i < threads; i++) {
-            if (r >= 0) {
-                printf("%*d: ", 3, i + r);
+
+            if (p >= 0) {
+                printf("%*d: ", 3, i + p);
             } else {
                 printf("%*s", 5, " ");
             }
             for (int j = 0; j < resources; j++) {
-                printf("%*d ", 3, subMatrix[i][j]);
+                printf("%*d ", 3, procMatrix[i]->resource[j]);
             }
             printf("\n");
         }

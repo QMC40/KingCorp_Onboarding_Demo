@@ -27,13 +27,13 @@ public:
         this->threads = threads;
         this->resources = resources;
         this->processNum = 0;
-        this->allocation = new Matrix(threads, resources);
-        this->max = new Matrix(threads, resources);
-        this->need = new Matrix(threads, resources);
+        this->allocation = new Matrix(threads, resources,"alloc");
+        this->max = new Matrix(threads, resources,"max");
+        this->need = new Matrix(threads, resources,"need");
 
-        this->request = new Matrix(1, resources);
-        this->available = new Matrix(1, resources);
-        this->resourceRequest = new Matrix(threads, resources);
+        this->request = new Matrix(1, resources,"req");
+        this->available = new Matrix(1, resources,"avail");
+        this->resourceRequest = new Matrix(threads, resources,"resReq");
     }
 
     ~System() {
@@ -87,18 +87,24 @@ void System::report() {
 
 void System::newRequest() {
     // Request Vector
-    Matrix reqNeed = need->at(processNum);
+    Matrix *reqNeed = new Matrix(1,resources,"reqNeed");
+    *reqNeed = need->at(processNum);
 
-    reqNeed.print(1,"req test");
+    reqNeed->print(1,"req need");
+    request->print(getProcessNum(), "Request");
+
     resourceRequest->setToZeroExcept(processNum, *request);
+//    resourceRequest->print(0, "resReq Matrix");
 //    resourceRequest->setToZeroExcept(processNum, *request);
-    request->print(getProcessNum(), "Request Vector");
+
 // determine if the request is granted
-    if (request <= &reqNeed) {
+    if (resourceRequest->at(processNum) <= need->at(processNum)) {
         if (request <= available) {
             request->print(1,"request");
             available->print(1,"available");
+            need->print(0, "Need Matrix before adjust");
             *need -= *resourceRequest;
+            need->print(0, "Need Matrix after adjust");
             *available -= *request;
             *allocation += *resourceRequest;
             if (inSafeState(*need, *allocation, *available, getRow())) {
@@ -115,7 +121,6 @@ void System::newRequest() {
         printf("\nTHE REQUEST CANNOT BE GRANTED!\nTHE PROCESS HAS EXCEEDED ITS MAXIMUM CLAIM!\n");
     printf("\nEND REPORT......................................\n\n");
 }
-
 
 bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process) {
     // Initialize variables
@@ -138,16 +143,16 @@ bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, in
         cycle = 0;
         fail = true;
         do {
-//            cout << "cycle " << cycle << " " << (finish[cycle] == -1) << " && " << (need.at(cycle) <= work) << endl;
+//            cout << "process " << cycle << " " << (finish[cycle] == -1) << " && " << (need.at(cycle) <= work) << endl;
             if (finish[cycle] == -1 && need.at(cycle) <= work) {
-//                cout << "HIT " << count << " = cycle " << cycle << endl;
+//                cout << "HIT " << count << " = process " << cycle << endl;
                 finish[cycle] = count; // mark process as completed using count of process in go list
                 work += allocation.at(cycle); // work regains resources released by completed process
                 fail = false;
                 count++;
             }
             cycle++;
-        } while (cycle < process);
+        } while (count != process && cycle < process);
     } while (!fail);
 
     if (count == process) {
