@@ -5,15 +5,6 @@
 
 using namespace std;
 
-//*********************************************************
-//
-// Function Declarations
-//
-//*********************************************************
-
-// Check if in safe state
-bool inSafeState(Matrix &, Matrix &, Matrix &, int);
-
 // takes input and populated matrix
 System systemBuilder(int argc, char **argv);
 
@@ -45,6 +36,7 @@ System systemBuilder(int argc, char **argv) {
     infile >> row; // number of processes
     infile >> col; // number of resources
     System test(row, col);
+
     test.populateMatrices(infile);
     test.report();
 
