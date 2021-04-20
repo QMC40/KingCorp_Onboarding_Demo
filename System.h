@@ -3,6 +3,7 @@
 
 #include "Matrix.h"
 #include <algorithm>
+#include <vector>
 
 class System {
 
@@ -61,10 +62,6 @@ public:
         return resources;
     }
 
-    int getProcessNum() const {
-        return processNum;
-    }
-
 };
 
 void System::report() {
@@ -86,24 +83,13 @@ void System::report() {
 }
 
 void System::newRequest() {
-    // Request Vector
-//    Matrix *reqNeed = new Matrix(1,resources,"reqNeed");
-//    *reqNeed = need->at(processNum);
-//
-//    reqNeed->print(1,"req need");
-//    request->print(getProcessNum(), "Request");
-
-    resourceRequest->setToZeroExcept(processNum, *request);
-//    resourceRequest->print(0, "resReq Matrix");
-//    resourceRequest->setToZeroExcept(processNum, *request);
 
 // determine if the request is granted
-    if (resourceRequest->at(processNum) <= need->at(processNum)) {
+    if (*request <= need->at(processNum)) {
         if (request <= available) {
             request->print(1,"request");
-//            available->print(1,"available");
             need->print(0, "Need Matrix before adjust");
-            *need -= *resourceRequest;
+            *need = need->at(processNum) - *request;
             need->print(0, "Need Matrix after adjust");
             *available -= *request;
             *allocation += *resourceRequest;
@@ -123,20 +109,19 @@ void System::newRequest() {
 }
 
 bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process) {
-    // Initialize variables
     //copy of the available resources vector
     Matrix work = available;
 
-    // vector to mark which processes satisfied and finish
+    // array to mark which processes satisfied and finish
     int finish[process];
     for (int i = 0; i < process; i++) {
         finish[i] = -1;
     }
 
-
     bool fail = true;
     int count = 0;
     int cycle = 0;
+    vector<int> order;
 
     // Loop starts to determine if the current state safe
     do {
@@ -146,6 +131,7 @@ bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, in
 //            cout << "process " << cycle << " " << (finish[cycle] == -1) << " && " << (need.at(cycle) <= work) << endl;
             if (finish[cycle] == -1 && need.at(cycle) <= work) {
 //                cout << "HIT " << count << " = process " << cycle << endl;
+                order.push_back(cycle);
                 finish[cycle] = count; // mark process as completed using count of process in go list
                 work += allocation.at(cycle); // work regains resources released by completed process
                 fail = false;
@@ -156,6 +142,14 @@ bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, in
     } while (!fail);
 
     if (count == process) {
+        cout << "Safe execution order is: <";
+        for(int i = 0; i < order.size(); i++) {
+            if(i != order.size()-1) {
+                cout << order[i] << ", ";
+            } else {
+                cout << order[i] << ">\n";
+            }
+        }
         return true;
     } else {
         return false;
