@@ -16,7 +16,7 @@ private:
     Matrix *allocation;
     Matrix *need;
 
-    // Vector pointers
+    // 'Vector' pointers
     Matrix *available;
     Matrix *request;
     Matrix *resourceRequest;
@@ -87,11 +87,11 @@ void System::report() {
 
 void System::newRequest() {
     // Request Vector
-    Matrix *reqNeed = new Matrix(1,resources,"reqNeed");
-    *reqNeed = need->at(processNum);
-
-    reqNeed->print(1,"req need");
-    request->print(getProcessNum(), "Request");
+//    Matrix *reqNeed = new Matrix(1,resources,"reqNeed");
+//    *reqNeed = need->at(processNum);
+//
+//    reqNeed->print(1,"req need");
+//    request->print(getProcessNum(), "Request");
 
     resourceRequest->setToZeroExcept(processNum, *request);
 //    resourceRequest->print(0, "resReq Matrix");
@@ -101,7 +101,7 @@ void System::newRequest() {
     if (resourceRequest->at(processNum) <= need->at(processNum)) {
         if (request <= available) {
             request->print(1,"request");
-            available->print(1,"available");
+//            available->print(1,"available");
             need->print(0, "Need Matrix before adjust");
             *need -= *resourceRequest;
             need->print(0, "Need Matrix after adjust");
