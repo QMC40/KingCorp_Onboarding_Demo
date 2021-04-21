@@ -24,14 +24,9 @@ struct Matrix {
         Process(const Process &rhs) {
             name = rhs.name;
             resources = rhs.resources;
-
+            resource = new int[resources];
             for (int i = 0; i < resources; i++) {
-                if (rhs.procMatrix[i]) {
-                    procMatrix[i] = new Process(resources);
-                    for (int j = 0; j < resources; j++) {
-                        procMatrix[i]->resource[j] = rhs.procMatrix[i]->resource[j];
-                    }
-                }
+                this->resource[i] = rhs.resource[i];
             }
         }
 
@@ -141,7 +136,7 @@ private:
 
 public:
 
-    // constructor
+// constructor
     explicit Matrix(int threads, int resources, string name) {
         this->name = std::move(name);
         this->threads = threads;
@@ -162,7 +157,7 @@ public:
 //        }
 //    }
 
-    // copy constructor
+// copy constructor
     Matrix(const Matrix &rhs) {
         threads = rhs.threads;
         resources = rhs.resources;
@@ -179,8 +174,10 @@ public:
         }
     }
 
-    // destructor
-    ~Matrix() {
+// destructor
+    ~
+
+    Matrix() {
         if (procMatrix != nullptr) {
 //            printf("%s destruct\n",name.c_str());
             for (int i = 0; i < threads; i++) {
@@ -192,7 +189,7 @@ public:
         }
     }
 
-    //write isEmpty() for matrix
+//write isEmpty() for matrix
 
     Matrix at(int r) const {
         Matrix ret(1, resources, "temp");
@@ -219,7 +216,7 @@ public:
         return ret;
     }
 
-    // operator overloads for Matrix class
+// operator overloads for Matrix class
 
     Matrix &operator=(const Matrix &rhs) {
         // test for self-copy
