@@ -6,7 +6,7 @@
 using namespace std;
 
 // takes input and populated matrix
-System systemBuilder(int argc, char **argv);
+System systemBuilder(char **argv);
 
 int main(int argc, char *argv[]) {
 
@@ -15,16 +15,18 @@ int main(int argc, char *argv[]) {
         printf("command line must include ONLY the filename of the sample input data\n");
         exit(1);
     }
-    systemBuilder(argc, argv);
-    cout << "done";
+
+    System test = systemBuilder(argv);
+    test.report();
+    test.newRequest();
     return 0;
 }
 
-System systemBuilder(int argc, char **argv) {
+System systemBuilder(char **argv) {
 
     //open up file stream
     ifstream infile;
-    int row, col, processNum; // # of processes, # of resources, process # of request
+    int row, col;
 
 // Starting to read data from file................................
     infile.open(argv[1]); // Open file
@@ -35,15 +37,7 @@ System systemBuilder(int argc, char **argv) {
     }
     infile >> row; // number of processes
     infile >> col; // number of resources
-    System test(row, col);
-
-    test.populateMatrices(infile);
-    test.report();
-
-
-
-
-
-//    cout << "done";
-    return test;
+    System temp(row, col);
+    temp.populateMatrices(infile);
+    return temp;
 }

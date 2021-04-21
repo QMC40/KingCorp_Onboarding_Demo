@@ -1,14 +1,8 @@
 #ifndef OS_PROJECT_4_MATRIX_H
 #define OS_PROJECT_4_MATRIX_H
 
-//*********************************************************
-//
-// Includes and Defines
-//
-//*********************************************************
-
 #include <cstdio>
-#include <fstream>
+//#include <fstream>
 #include <utility>
 
 using namespace std;
@@ -16,11 +10,9 @@ using namespace std;
 struct Matrix {
 
     struct Process {
-        int resources;
         int *resource;
 
         explicit Process(int resources) {
-            this->resources = resources;
             resource = new int[resources];
         }
 
@@ -30,8 +22,7 @@ struct Matrix {
         }
     };
 
-//private:
-    string name;
+private:
     int threads;
     int resources;
     Process **procMatrix;
@@ -39,8 +30,7 @@ struct Matrix {
 public:
 
     // constructor
-    explicit Matrix(int threads, int resources, string name) {
-        this->name = std::move(name);
+    explicit Matrix(int threads, int resources) {
         this->threads = threads;
         this->resources = resources;
         procMatrix = new Process *[threads];
@@ -49,15 +39,6 @@ public:
         }
     }
 
-//    // constructor
-//    explicit Matrix(int threads, int resources) {
-//        this->threads = threads;
-//        this->resources = resources;
-//        procMatrix = new int* [threads];
-//        for (int i = 0; i < threads; i++) {
-//            procMatrix[i] = new int[resources];
-//        }
-//    }
 
     // copy constructor
     Matrix(const Matrix &rhs) {
@@ -79,7 +60,6 @@ public:
     // destructor
     ~Matrix() {
         if (procMatrix != nullptr) {
-//            printf("%s destruct\n",name.c_str());
             for (int i = 0; i < threads; i++) {
                 if (procMatrix[i]) {
                     delete procMatrix[i];
@@ -89,10 +69,9 @@ public:
         }
     }
 
-    //write isEmpty() for matrix
-
+    // retrieve individual process of matrix
     Matrix at(int r) const {
-        Matrix ret(1, resources,"temp");
+        Matrix ret(1, resources);
         try {
             if (this->procMatrix) {
                 ret.procMatrix = new Process *[1];
@@ -142,7 +121,6 @@ public:
     }
 
     void read(ifstream &infile) const {
-        int temp;
         if (infile.is_open()) {
             for (int i = 0; i < threads; i++) {
                 for (int j = 0; j < resources; j++) {

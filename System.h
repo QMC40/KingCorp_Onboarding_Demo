@@ -27,13 +27,13 @@ public:
         this->threads = threads;
         this->resources = resources;
         this->processNum = 0;
-        this->allocation = new Matrix(threads, resources,"alloc");
-        this->max = new Matrix(threads, resources,"max");
-        this->need = new Matrix(threads, resources,"need");
+        this->allocation = new Matrix(threads, resources);
+        this->max = new Matrix(threads, resources);
+        this->need = new Matrix(threads, resources);
 
-        this->request = new Matrix(1, resources,"req");
-        this->available = new Matrix(1, resources,"avail");
-        this->resourceRequest = new Matrix(threads, resources,"resReq");
+        this->request = new Matrix(1, resources);
+        this->available = new Matrix(1, resources);
+        this->resourceRequest = new Matrix(threads, resources);
     }
 
     ~System() {
@@ -61,10 +61,6 @@ public:
         return resources;
     }
 
-    int getProcessNum() const {
-        return processNum;
-    }
-
 };
 
 void System::report() {
@@ -81,27 +77,18 @@ void System::report() {
 // Current status of system
     printf("\nTHE SYSTEM IS %s STATE!\n", (inSafeState(*need, *allocation, *available,
                                                             getRow())) ? "IN A SAFE" : "NOT IN A SAFE");
-    newRequest();
 
 }
 
 void System::newRequest() {
-    // Request Vector
-//    Matrix *reqNeed = new Matrix(1,resources,"reqNeed");
-//    *reqNeed = need->at(processNum);
-//
-//    reqNeed->print(1,"req need");
-//    request->print(getProcessNum(), "Request");
 
+    //create a complete matrix that is empty except the request process
     resourceRequest->setToZeroExcept(processNum, *request);
-//    resourceRequest->print(0, "resReq Matrix");
-//    resourceRequest->setToZeroExcept(processNum, *request);
 
-// determine if the request is granted
+    // determine if the request is granted
     if (resourceRequest->at(processNum) <= need->at(processNum)) {
-        if (request <= available) {
+        if (*request <= *available) {
             request->print(1,"request");
-//            available->print(1,"available");
             need->print(0, "Need Matrix before adjust");
             *need -= *resourceRequest;
             need->print(0, "Need Matrix after adjust");
