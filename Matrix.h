@@ -1,12 +1,6 @@
 #ifndef OS_PROJECT_4_MATRIX_H
 #define OS_PROJECT_4_MATRIX_H
 
-//*********************************************************
-//
-// Includes and Defines
-//
-//*********************************************************
-
 #include <cstdio>
 #include <fstream>
 #include <utility>
@@ -16,21 +10,130 @@ using namespace std;
 struct Matrix {
 
     struct Process {
+        string name;
         int resources;
         int *resource;
 
-        explicit Process(int resources) {
-            this->resources = resources;
+        Process(int resources, string name) : resources{resources}, name{std::move(name)} {
             resource = new int[resources];
+        }
+
+        explicit Process(int resources) : Process{resources, ""} {}
+
+        // copy constructor
+        Process(const Process &rhs) {
+            name = rhs.name;
+            resources = rhs.resources;
+
+            for (int i = 0; i < resources; i++) {
+                if (rhs.procMatrix[i]) {
+                    procMatrix[i] = new Process(resources);
+                    for (int j = 0; j < resources; j++) {
+                        procMatrix[i]->resource[j] = rhs.procMatrix[i]->resource[j];
+                    }
+                }
+            }
         }
 
         ~Process() {
 //            printf("Process destruct\n");
             delete[] resource;
         }
+
+        bool operator<=(const Process &rhs) const {
+            // Throw exception when 2 Processes have different sizes.
+            try {
+                if (rhs.resources != this->resources) {
+                    throw invalid_argument("Processes' sizes are different!\n");
+                } else {
+                    for (int i = 0; i < resources; i++) {
+                        if (this->resource[i] > rhs.resource[i]) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            } catch (invalid_argument &e) {
+                cerr << e.what() << endl;
+                return false;
+            }
+        }
+
+        Process &operator+=(const Process &rhs) {
+            // Throw exception when 2 matrices have different size.
+            try {
+                if (this->resources != rhs.resources) {
+                    throw invalid_argument("Processes' sizes are different!\n");
+                }
+                // Update this Process
+                for (int i = 0; i < this->resources; i++) {
+                    {
+                        this->resource[i] += rhs.resource[i];
+                    }
+                }
+                return *this;
+            } catch (invalid_argument &e) {
+                cerr << e.what() << endl;
+            }
+            return *this;
+        }
+
+        Process operator+(const Process &other) const {
+            return Process(*this) += other;
+        }
+
+        Process &operator-=(const Process &rhs) {
+
+            try {
+                if (this->resources - rhs.resources != 0) {
+                    throw invalid_argument("Processes' sizes are different!\n");
+                }
+                // Update this Process
+                for (int i = 0; i < this->resources; i++) {
+                    this->resource[i] -= rhs.resource[i];
+                }
+                return *this;
+
+            } catch (invalid_argument &e) {
+                cerr << e.what() << endl;
+            }
+            return *this;
+        }
+
+        Process operator-(const Process &other) const {
+            return Process(*this) -= other;
+        }
+
+        void print(int p) const {
+
+            //print title and column headers for resources
+            if (!name.empty()) {
+                printf("\nThe %s is...\n", getName().c_str());
+                printf("%*c  ", 3, ' ');
+                for (int j = 0; j < resources; j++) {
+                    printf("%*c ", 3, (char) ('A' + j));
+                }
+            }
+
+            printf("\n%*s", 5, " ");
+
+            for (int i = 0; i < resources; i++) {
+                printf("%*d ", 3, resource[i]);
+            }
+            printf("\n");
+        }
+
+        const string &getName() const {
+            return name;
+        }
+
+        int getResources() const {
+            return resources;
+        }
+
     };
 
-//private:
+private:
     string name;
     int threads;
     int resources;
@@ -92,7 +195,7 @@ public:
     //write isEmpty() for matrix
 
     Matrix at(int r) const {
-        Matrix ret(1, resources,"temp");
+        Matrix ret(1, resources, "temp");
         try {
             if (this->procMatrix) {
                 ret.procMatrix = new Process *[1];
@@ -118,7 +221,7 @@ public:
 
     // operator overloads for Matrix class
 
-    Matrix &operator = (const Matrix &rhs) {
+    Matrix &operator=(const Matrix &rhs) {
         // test for self-copy
         if (this != &rhs) {
             // delete old matrix
@@ -157,7 +260,7 @@ public:
             for (int j = 0; j < resources; j++) {
 
                 if (i == r) {
-                            procMatrix[r]->resource[j] = request.procMatrix[0]->resource[j];
+                    procMatrix[r]->resource[j] = request.procMatrix[0]->resource[j];
                 } else {
                     procMatrix[i]->resource[j] = 0;
                 }
@@ -165,7 +268,7 @@ public:
         }
     }
 
-    Matrix &operator += (const Matrix &rhs) {
+    Matrix &operator+=(const Matrix &rhs) {
 // Throw exception when 2 matrices have different size.
         try {
             if (rhs.resources != this->resources && rhs.threads != this->threads) {
@@ -186,11 +289,11 @@ public:
         return *this;
     }
 
-    Matrix operator + (const Matrix &other) const {
+    Matrix operator+(const Matrix &other) const {
         return Matrix(*this) += other;
     }
 
-    Matrix &operator -= (const Matrix &rhs) {
+    Matrix &operator-=(const Matrix &rhs) {
 //        cout << endl << "subtracting" << endl;
 // Throw exception when 2 matrices have the same size.
         try {
@@ -216,11 +319,11 @@ public:
     }
 
 // subtraction overload
-    Matrix operator - (const Matrix &other) const {
+    Matrix operator-(const Matrix &other) const {
         return Matrix(*this) -= other;
     }
 
-    bool operator <= (const Matrix &rhs) const {
+    bool operator<=(const Matrix &rhs) const {
         if (rhs.resources != this->resources && rhs.threads != this->threads) {
             cout << endl << "fail" << endl;
             return false;

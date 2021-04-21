@@ -54,6 +54,9 @@ public:
 
     void populateMatrices(ifstream &infile);
 
+    // takes input and populated matrix
+    static System systemBuilder(const string& fileName);
+
     int getRow() const {
         return threads;
     }
@@ -166,6 +169,29 @@ void System::populateMatrices(ifstream &infile) {
     request->read(infile);
     infile.close(); // Closing file
     *need = (*max - *allocation);
+}
+
+System systemBuilder(const string& fileName) {
+
+    //open up file stream
+    ifstream infile;
+    int row, col, processNum; // # of processes, # of resources, process # of request
+
+// Starting to read data from file................................
+    infile.open(fileName); // Open file
+// Check error opening file
+    if (infile.fail()) {
+        perror(fileName.c_str());
+        exit(1);
+    }
+
+    infile >> row; // number of processes
+    infile >> col; // number of resources
+    System temp(row, col);
+
+    temp.populateMatrices(infile);
+    temp.report();
+    return temp;
 }
 
 #endif //OS_PROJECT_4_SYSTEM_H
