@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
     }
 
     System test = System::systemBuilder(fileName);
+//    test.report();
     cout << "done";
     return 0;
 }

@@ -17,10 +17,10 @@ private:
     Matrix *allocation;
     Matrix *need;
 
-    // 'Vector' pointers
-    Matrix *available;
-    Matrix *request;
-    Matrix *resourceRequest;
+    // process pointers
+    Matrix::Process *available;
+    Matrix::Process *request;
+    Matrix::Process *resourceRequest;
 
 public:
 
@@ -32,9 +32,9 @@ public:
         this->max = new Matrix(threads, resources,"max");
         this->need = new Matrix(threads, resources,"need");
 
-        this->request = new Matrix(1, resources,"req");
-        this->available = new Matrix(1, resources,"avail");
-        this->resourceRequest = new Matrix(threads, resources,"resReq");
+        this->request = new Matrix::Process(resources,"req");
+        this->available = new Matrix::Process(resources,"avail");
+        this->resourceRequest = new Matrix::Process(resources,"resReq");
     }
 
     ~System() {
@@ -50,7 +50,7 @@ public:
 
     void newRequest();
 
-    static bool inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process);
+    static bool inSafeState(Matrix &need, Matrix &allocation, Matrix::Process &available, int process);
 
     void populateMatrices(ifstream &infile);
 
@@ -77,7 +77,7 @@ void System::report() {
     max->print(0, "Max Matrix");
     need->print(0, "Need Matrix");
 // Available vector
-    available->print(-1, "Available Vector");
+    available->print();
 // Current status of system
     printf("\nTHE SYSTEM IS %s STATE!\n", (inSafeState(*need, *allocation, *available,
                                                             getRow())) ? "IN A SAFE" : "NOT IN A SAFE");
@@ -88,9 +88,9 @@ void System::report() {
 void System::newRequest() {
 
 // determine if the request is granted
-    if (*request <= need->at(processNum)) {
+    if (*request <= need[processNum]) {
         if (request <= available) {
-            request->print(1,"request");
+            request->print();
             need->print(0, "Need Matrix before adjust");
             *need = need->at(processNum) - *request;
             need->print(0, "Need Matrix after adjust");
@@ -99,7 +99,7 @@ void System::newRequest() {
             if (inSafeState(*need, *allocation, *available, getRow())) {
                 printf("\nTHE REQUEST CAN BE GRANTED!\n");
 // calculate and print new available vector
-                available->print(-1, "New Available Vector");
+                available->print();
             } else
                 printf("\nTHE REQUEST CANNOT BE GRANTED!\nTHE SYSTEM IS NOT IN SAFE STATE IF "
                        "REQUEST IS GRANTED!\n");
@@ -111,7 +111,7 @@ void System::newRequest() {
     printf("\nEND REPORT......................................\n\n");
 }
 
-bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process) {
+bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix::Process &available, int process) {
     //copy of the available resources vector
     Matrix work = available;
 
@@ -171,7 +171,7 @@ void System::populateMatrices(ifstream &infile) {
     *need = (*max - *allocation);
 }
 
-System systemBuilder(const string& fileName) {
+System System::systemBuilder(const string& fileName) {
 
     //open up file stream
     ifstream infile;
@@ -188,9 +188,7 @@ System systemBuilder(const string& fileName) {
     infile >> row; // number of processes
     infile >> col; // number of resources
     System temp(row, col);
-
     temp.populateMatrices(infile);
-    temp.report();
     return temp;
 }
 

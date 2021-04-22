@@ -35,6 +35,15 @@ struct Matrix {
             delete[] resource;
         }
 
+        int& operator[](int index) const {
+            int* ptr {};
+            if (index >= resources) {
+                cout << "Array index out of bound, exiting";
+                exit(0);
+            }
+            return ptr[index];
+        }
+
         bool operator<=(const Process &rhs) const {
             // Throw exception when 2 Processes have different sizes.
             try {
@@ -99,7 +108,7 @@ struct Matrix {
             return Process(*this) -= other;
         }
 
-        void print(int p) const {
+        void print() const {
 
             //print title and column headers for resources
             if (!name.empty()) {
@@ -191,15 +200,14 @@ public:
 
 //write isEmpty() for matrix
 
-    Matrix at(int r) const {
-        Matrix ret(1, resources, "temp");
+    Process operator[](int index) const {
+
+        Process ret(resources, "temp");
         try {
             if (this->procMatrix) {
-                ret.procMatrix = new Process *[1];
-                ret.procMatrix[0] = new Process(resources);
-                if (this->procMatrix[r]) {
+                if (this->procMatrix[index]) {
                     for (int i = 0; i < resources; i++) {
-                        ret.procMatrix[0]->resource[i] = this->procMatrix[r]->resource[i];
+                        ret.resource[i] = this->procMatrix[index]->resource[i];
                     }
                 } else {
                     throw out_of_range("Matrix thread / threads is empty!\n");
