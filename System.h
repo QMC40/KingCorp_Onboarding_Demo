@@ -3,13 +3,16 @@
 
 #include "Matrix.h"
 #include <algorithm>
+#include <iostream>
+
+using namespace std;
 
 class System {
 
 private:
     int threads;
     int resources;
-    int processNum;
+    int processNum {};
 
     // Matrices pointers
     Matrix *max;
@@ -17,9 +20,8 @@ private:
     Matrix *need;
 
     // 'Vector' pointers
-    Matrix *available;
+    Matrix::Process *available;
     Matrix *request;
-    Matrix *resourceRequest;
 
 public:
 
@@ -27,90 +29,90 @@ public:
         this->threads = threads;
         this->resources = resources;
         this->processNum = 0;
-        this->allocation = new Matrix(threads, resources,"alloc");
+        this->allocation = new Matrix(threads, resources,"allocation");
         this->max = new Matrix(threads, resources,"max");
         this->need = new Matrix(threads, resources,"need");
 
-        this->request = new Matrix(1, resources,"req");
-        this->available = new Matrix(1, resources,"avail");
-        this->resourceRequest = new Matrix(threads, resources,"resReq");
+        this->request = new Matrix(1,resources,"request");
+        this->available = new Matrix::Process(resources,"available");
     }
 
     ~System() {
         delete allocation;
         delete max;
-        delete resourceRequest;
         delete available;
         delete request;
         delete need;
     }
 
-    void report();
+    // takes input and returns system with populated matrices
+    static System systemBuilder(const string& fileName);
 
-    void newRequest();
+    void systemReport() const;
 
-    static bool inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process);
+    void newRequest() const;
+
+    bool inSafeState() const;
 
     void populateMatrices(ifstream &infile);
 
-    int getRow() const {
+    int getThreads() const {
         return threads;
     }
 
-    int getCol() const {
+    int getResources() const {
         return resources;
-    }
-
-    int getProcessNum() const {
-        return processNum;
     }
 
 };
 
-void System::report() {
-// Print the report.....................................
-    printf("\nTHE REPORT STARTS HERE.........................\n\n"
-           "There are %d processes in the system.\n\n"
-           "There are %d resource types.\n", getRow(), getCol());
-// Matrices
+System System::systemBuilder(const string& fileName) {
+
+    //open up file stream
+    ifstream infile;
+    int row, col; // # of processes, # of resources
+
+    // open file for read
+    infile.open(fileName); // Open file
+    // fail if file doesn't open
+    if (infile.fail()) {
+        perror(fileName.c_str());
+        exit(1);
+    }
+    infile >> row; // number of processes
+    infile >> col; // number of resources
+    auto *temp = new System(row, col);
+    temp->populateMatrices(infile);
+    return *temp;
+}
+
+void System::systemReport() const {
+
+    // execute system status report
+    printf("\nThere are %d processes in the system.\n\n"
+           "There are %d resource types.\n", getThreads(), getResources());
+    // Matrices
     allocation->print(0, "Allocation Matrix");
     max->print(0, "Max Matrix");
     need->print(0, "Need Matrix");
-// Available vector
-    available->print(-1, "Available Vector");
+    // Available vector
+    available->print("Available Vector");
 // Current status of system
-    printf("\nTHE SYSTEM IS %s STATE!\n", (inSafeState(*need, *allocation, *available,
-                                                            getRow())) ? "IN A SAFE" : "NOT IN A SAFE");
-    newRequest();
-
+    printf("\nTHE SYSTEM IS %s STATE!\n", (inSafeState() ? "IN A SAFE" : "NOT IN A SAFE"));
 }
 
-void System::newRequest() {
-    // Request Vector
-//    Matrix *reqNeed = new Matrix(1,resources,"reqNeed");
-//    *reqNeed = need->at(processNum);
-//
-//    reqNeed->print(1,"req need");
-//    request->print(getProcessNum(), "Request");
-
-    resourceRequest->setToZeroExcept(processNum, *request);
-//    resourceRequest->print(0, "resReq Matrix");
-//    resourceRequest->setToZeroExcept(processNum, *request);
-
-// determine if the request is granted
-    if (resourceRequest->at(processNum) <= need->at(processNum)) {
-        if (request <= available) {
-            request->print(1,"request");
-//            available->print(1,"available");
-            need->print(0, "Need Matrix before adjust");
-            *need -= *resourceRequest;
-            need->print(0, "Need Matrix after adjust");
-            *available -= *request;
-            *allocation += *resourceRequest;
-            if (inSafeState(*need, *allocation, *available, getRow())) {
+void System::newRequest() const {
+    // determine if the request is granted
+    if (request->at(0) <= need->at(processNum)) {
+        if (request->at(0) <= *available) {
+            request->print(1,"Request Vector");
+            *need->procMatrix[processNum] -= request->at(0);
+            *available -= request->at(0);
+            *allocation->procMatrix[processNum] += request->at(0);
+            if (inSafeState()) {
                 printf("\nTHE REQUEST CAN BE GRANTED!\n");
-// calculate and print new available vector
-                available->print(-1, "New Available Vector");
+            // calculate and print new available vector
+                available->print("Available Vector");
             } else
                 printf("\nTHE REQUEST CANNOT BE GRANTED!\nTHE SYSTEM IS NOT IN SAFE STATE IF "
                        "REQUEST IS GRANTED!\n");
@@ -119,23 +121,25 @@ void System::newRequest() {
                    "ARE NOT AVAILABLE!\n");
     } else
         printf("\nTHE REQUEST CANNOT BE GRANTED!\nTHE PROCESS HAS EXCEEDED ITS MAXIMUM CLAIM!\n");
-    printf("\nEND REPORT......................................\n\n");
 }
 
-bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, int process) {
+bool System::inSafeState() const {
     // Initialize variables
     //copy of the available resources vector
-    Matrix work = available;
+    Matrix::Process work(*available);
 
-    // vector to mark which processes satisfied and finish
-    int finish[process];
-    for (int i = 0; i < process; i++) {
+    // vector to mark which processes satisfied and added to safe execution order
+    int finish[threads];
+    for (int i = 0; i < threads; i++) {
         finish[i] = -1;
     }
 
-
+    // flag to indicate if loop has completed circuit of threads without finding a process that current
+    // available resources satisfies indicating unsafe state reached
     bool fail = true;
+    // count of successfully allocated processes
     int count = 0;
+    // counts iteration through the threads list
     int cycle = 0;
 
     // Loop starts to determine if the current state safe
@@ -143,19 +147,24 @@ bool System::inSafeState(Matrix &need, Matrix &allocation, Matrix &available, in
         cycle = 0;
         fail = true;
         do {
-//            cout << "process " << cycle << " " << (finish[cycle] == -1) << " && " << (need.at(cycle) <= work) << endl;
-            if (finish[cycle] == -1 && need.at(cycle) <= work) {
+            // TS code
+//            cout << "process " << cycle << " " << (finish[cycle] == -1) << " && " << (need->at(cycle) <= *work) << endl;
+            if (finish[cycle] == -1 && need->at(cycle) <= work) {
+                //TS code
 //                cout << "HIT " << count << " = process " << cycle << endl;
                 finish[cycle] = count; // mark process as completed using count of process in go list
-                work += allocation.at(cycle); // work regains resources released by completed process
-                fail = false;
+                work += (allocation->at(cycle)); // work regains resources released by completed process
+                fail = false;   // flag set to remain in loop for another iteration
                 count++;
             }
             cycle++;
-        } while (count != process && cycle < process);
+        // exit if all threads successfully allocated and safe running order finished or circuit of threads
+        //completed
+        } while (count != threads && cycle < threads);
+    // remain in the loop while processes still successfully allocated and moved to safe order
     } while (!fail);
 
-    if (count == process) {
+    if (count == threads) {
         return true;
     } else {
         return false;
