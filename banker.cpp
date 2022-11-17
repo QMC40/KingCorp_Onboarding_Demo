@@ -7,7 +7,7 @@
 using namespace std;
 
 // demonstration 2
-// conflict demonstration
+// conflict demonstration 3
 
 int main(int argc, char *argv[]) {
 
