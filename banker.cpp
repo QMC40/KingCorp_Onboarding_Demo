@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include "System.h"
 // This Code is Great
-// This Code is Really Great
+
 using namespace std;
 
 // demonstration 2
