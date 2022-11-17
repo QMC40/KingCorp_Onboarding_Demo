@@ -6,6 +6,8 @@
 
 using namespace std;
 
+// demonstration 2
+
 int main(int argc, char *argv[]) {
 
     // ensure name of file to be tested included in CLI
