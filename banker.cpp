@@ -7,6 +7,7 @@
 using namespace std;
 
 // demonstration 2
+// this conflicts with the other commit
 
 int main(int argc, char *argv[]) {
 
